@@ -10961,35 +10961,18 @@ void ImGui::TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabI
     const float rounding = ImMax(0.0f, ImMin((flags & ImGuiTabItemFlags_Button) ? g.Style.FrameRounding : g.Style.TabRounding, width * 0.5f - 1.0f));
     const float y1 = bb.Min.y + 1.0f;
     const float y2 = bb.Max.y - g.Style.TabBarBorderSize;
-    const float cr = rounding; // Chrome-style bottom elbow radius
+    const float cr = rounding; // elbow radius at bottom corners (Chrome-style)
 
-    // Tab body: original convex fill (unchanged)
-    draw_list->PathLineTo(ImVec2(bb.Min.x, y2));
+    // Fill: outward quarter-circle elbows at bottom corners blend the tab into the tab bar
+    draw_list->PathLineTo(ImVec2(bb.Min.x - cr, y2));
+    draw_list->PathArcToFast(ImVec2(bb.Min.x, y2), cr, 6, 9);
     draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding, y1 + rounding), rounding, 6, 9);
     draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding, y1 + rounding), rounding, 9, 12);
-    draw_list->PathLineTo(ImVec2(bb.Max.x, y2));
+    draw_list->PathArcToFast(ImVec2(bb.Max.x, y2), cr, 9, 12);
+    draw_list->PathLineTo(ImVec2(bb.Max.x + cr, y2));
     draw_list->PathFillConvex(col);
-
-    // Chrome-style elbows: each is a small convex pie-slice drawn separately.
-    // The shape is: corner → extension → outward arc → back to corner.
-    // Both are convex (CW winding in screen space) so PathFillConvex works correctly.
-    if (cr > 0.5f)
-    {
-        // Bottom-left elbow
-        draw_list->PathLineTo(ImVec2(bb.Min.x, y2));
-        draw_list->PathLineTo(ImVec2(bb.Min.x - cr, y2));
-        draw_list->PathArcToFast(ImVec2(bb.Min.x, y2), cr, 6, 9); // arc from left → up
-        draw_list->PathFillConvex(col);
-
-        // Bottom-right elbow
-        draw_list->PathLineTo(ImVec2(bb.Max.x, y2));
-        draw_list->PathArcToFast(ImVec2(bb.Max.x, y2), cr, 9, 12); // arc from up → right
-        draw_list->PathFillConvex(col);
-    }
-
     if (g.Style.TabBorderSize > 0.0f)
     {
-        // Open stroke following the full tab outline including elbows (not the bottom edge)
         draw_list->PathLineTo(ImVec2(bb.Min.x - cr + 0.5f, y2));
         draw_list->PathArcToFast(ImVec2(bb.Min.x + 0.5f, y2 - 0.5f), cr, 6, 9);
         draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding + 0.5f, y1 + rounding + 0.5f), rounding, 6, 9);
