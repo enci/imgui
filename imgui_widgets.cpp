@@ -10961,41 +10961,47 @@ void ImGui::TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabI
     const float rounding = ImMax(0.0f, ImMin((flags & ImGuiTabItemFlags_Button) ? g.Style.FrameRounding : g.Style.TabRounding, width * 0.5f - 1.0f));
     const float y1 = bb.Min.y + 1.0f;
     const float y2 = bb.Max.y - g.Style.TabBarBorderSize;
-    const float cr = rounding; // Chrome-style bottom elbow radius
 
-    // Tab body: original convex fill (unchanged)
-    draw_list->PathLineTo(ImVec2(bb.Min.x, y2));
-    draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding, y1 + rounding), rounding, 6, 9);
-    draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding, y1 + rounding), rounding, 9, 12);
-    draw_list->PathLineTo(ImVec2(bb.Max.x, y2));
-    draw_list->PathFillConvex(col);
+    // Build full Chrome-style tab outline: outward quarter-circle elbows at the bottom corners
+    // connect the tab sides into the tab bar, creating a concave shape overall.
+    draw_list->PathLineTo(ImVec2(bb.Min.x - rounding, y2));                                    // left base
+    draw_list->PathArcToFast(ImVec2(bb.Min.x, y2), rounding, 6, 9);                           // left elbow (left → up)
+    draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding, y1 + rounding), rounding, 6, 9);     // top-left corner
+    draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding, y1 + rounding), rounding, 9, 12);    // top-right corner
+    draw_list->PathArcToFast(ImVec2(bb.Max.x, y2), rounding, 9, 12);                          // right elbow (up → right)
+    draw_list->PathLineTo(ImVec2(bb.Max.x + rounding, y2));                                    // right base
 
-    // Chrome-style elbows: each is a small convex pie-slice drawn separately.
-    // The shape is: corner → extension → outward arc → back to corner.
-    // Both are convex (CW winding in screen space) so PathFillConvex works correctly.
-    if (cr > 0.5f)
+    // The combined shape is concave (the elbow junctions are re-entrant vertices), so
+    // PathFillConvex would corrupt it. Use a triangle fan from the tab centre instead.
     {
-        // Bottom-left elbow
-        draw_list->PathLineTo(ImVec2(bb.Min.x, y2));
-        draw_list->PathLineTo(ImVec2(bb.Min.x - cr, y2));
-        draw_list->PathArcToFast(ImVec2(bb.Min.x, y2), cr, 6, 9); // arc from left → up
-        draw_list->PathFillConvex(col);
+        const int n = draw_list->_Path.Size;
+        const ImVec2* pts = draw_list->_Path.Data;
+        const ImVec2 uv = draw_list->_Data->TexUvWhitePixel;
+        const ImVec2 fan_center((bb.Min.x + bb.Max.x) * 0.5f, (y1 + y2) * 0.5f);
 
-        // Bottom-right elbow
-        draw_list->PathLineTo(ImVec2(bb.Max.x, y2));
-        draw_list->PathArcToFast(ImVec2(bb.Max.x, y2), cr, 9, 12); // arc from up → right
-        draw_list->PathFillConvex(col);
+        draw_list->PrimReserve(n * 3, n + 1);
+        const ImDrawIdx base = (ImDrawIdx)draw_list->_VtxCurrentIdx;
+        draw_list->PrimWriteVtx(fan_center, uv, col);
+        for (int i = 0; i < n; i++)
+            draw_list->PrimWriteVtx(pts[i], uv, col);
+        for (int i = 0; i < n; i++)
+        {
+            draw_list->PrimWriteIdx(base);                          // fan centre
+            draw_list->PrimWriteIdx(base + 1 + i);                 // boundary[i]
+            draw_list->PrimWriteIdx(base + 1 + (i + 1) % n);       // boundary[i+1]
+        }
     }
+    draw_list->PathClear();
 
     if (g.Style.TabBorderSize > 0.0f)
     {
-        // Open stroke following the full tab outline including elbows (not the bottom edge)
-        draw_list->PathLineTo(ImVec2(bb.Min.x - cr + 0.5f, y2));
-        draw_list->PathArcToFast(ImVec2(bb.Min.x + 0.5f, y2 - 0.5f), cr, 6, 9);
+        // Open stroke from left elbow tip to right elbow tip (no bottom edge drawn)
+        draw_list->PathLineTo(ImVec2(bb.Min.x - rounding + 0.5f, y2));
+        draw_list->PathArcToFast(ImVec2(bb.Min.x + 0.5f, y2 - 0.5f), rounding, 6, 9);
         draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding + 0.5f, y1 + rounding + 0.5f), rounding, 6, 9);
         draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding - 0.5f, y1 + rounding + 0.5f), rounding, 9, 12);
-        draw_list->PathArcToFast(ImVec2(bb.Max.x - 0.5f, y2 - 0.5f), cr, 9, 12);
-        draw_list->PathLineTo(ImVec2(bb.Max.x + cr - 0.5f, y2));
+        draw_list->PathArcToFast(ImVec2(bb.Max.x - 0.5f, y2 - 0.5f), rounding, 9, 12);
+        draw_list->PathLineTo(ImVec2(bb.Max.x + rounding - 0.5f, y2));
         draw_list->PathStroke(GetColorU32(ImGuiCol_Border), 0, g.Style.TabBorderSize);
     }
 }
