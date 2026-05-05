@@ -10961,17 +10961,24 @@ void ImGui::TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabI
     const float rounding = ImMax(0.0f, ImMin((flags & ImGuiTabItemFlags_Button) ? g.Style.FrameRounding : g.Style.TabRounding, width * 0.5f - 1.0f));
     const float y1 = bb.Min.y + 1.0f;
     const float y2 = bb.Max.y - g.Style.TabBarBorderSize;
-    draw_list->PathLineTo(ImVec2(bb.Min.x, y2));
+    const float cr = rounding; // elbow radius at bottom corners (Chrome-style)
+
+    // Fill: outward quarter-circle elbows at bottom corners blend the tab into the tab bar
+    draw_list->PathLineTo(ImVec2(bb.Min.x - cr, y2));
+    draw_list->PathArcToFast(ImVec2(bb.Min.x, y2), cr, 6, 9);
     draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding, y1 + rounding), rounding, 6, 9);
     draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding, y1 + rounding), rounding, 9, 12);
-    draw_list->PathLineTo(ImVec2(bb.Max.x, y2));
+    draw_list->PathArcToFast(ImVec2(bb.Max.x, y2), cr, 9, 12);
+    draw_list->PathLineTo(ImVec2(bb.Max.x + cr, y2));
     draw_list->PathFillConvex(col);
     if (g.Style.TabBorderSize > 0.0f)
     {
-        draw_list->PathLineTo(ImVec2(bb.Min.x + 0.5f, y2));
+        draw_list->PathLineTo(ImVec2(bb.Min.x - cr + 0.5f, y2));
+        draw_list->PathArcToFast(ImVec2(bb.Min.x + 0.5f, y2 - 0.5f), cr, 6, 9);
         draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding + 0.5f, y1 + rounding + 0.5f), rounding, 6, 9);
         draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding - 0.5f, y1 + rounding + 0.5f), rounding, 9, 12);
-        draw_list->PathLineTo(ImVec2(bb.Max.x - 0.5f, y2));
+        draw_list->PathArcToFast(ImVec2(bb.Max.x - 0.5f, y2 - 0.5f), cr, 9, 12);
+        draw_list->PathLineTo(ImVec2(bb.Max.x + cr - 0.5f, y2));
         draw_list->PathStroke(GetColorU32(ImGuiCol_Border), 0, g.Style.TabBorderSize);
     }
 }
