@@ -10974,7 +10974,51 @@ void ImGui::TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabI
     draw_list->PathFillConvex(col);
     draw_list->PathClear();
     
-    // Add the small trangle fans here
+    // Concave bottom-corner fills: each is a triangle fan from the corner vertex.
+    {
+        const int segs = 3;
+        const ImVec2 uv = draw_list->_Data->TexUvWhitePixel;
+
+        // Left corner
+        {
+            const ImVec2 ac(bb.Min.x - rounding, y2 - rounding);
+            const ImVec2 fc(bb.Min.x, y2);
+            draw_list->PrimReserve(segs * 3, segs + 2);
+            const ImDrawIdx base = (ImDrawIdx)draw_list->_VtxCurrentIdx;
+            draw_list->PrimWriteVtx(fc, uv, col);
+            for (int i = 0; i <= segs; i++)
+            {
+                float a = IM_PI * 0.5f * (1.0f - (float)i / segs);
+                draw_list->PrimWriteVtx(ac + ImVec2(ImCos(a) * rounding, ImSin(a) * rounding), uv, col);
+            }
+            for (int i = 0; i < segs; i++)
+            {
+                draw_list->PrimWriteIdx(base);
+                draw_list->PrimWriteIdx(base + 1 + i);
+                draw_list->PrimWriteIdx(base + 2 + i);
+            }
+        }
+
+        // Right corner
+        {
+            const ImVec2 ac(bb.Max.x + rounding, y2 - rounding);
+            const ImVec2 fc(bb.Max.x, y2);
+            draw_list->PrimReserve(segs * 3, segs + 2);
+            const ImDrawIdx base = (ImDrawIdx)draw_list->_VtxCurrentIdx;
+            draw_list->PrimWriteVtx(fc, uv, col);
+            for (int i = 0; i <= segs; i++)
+            {
+                float a = IM_PI - (float)i / segs * (IM_PI * 0.5f);
+                draw_list->PrimWriteVtx(ac + ImVec2(ImCos(a) * rounding, ImSin(a) * rounding), uv, col);
+            }
+            for (int i = 0; i < segs; i++)
+            {
+                draw_list->PrimWriteIdx(base);
+                draw_list->PrimWriteIdx(base + 1 + i);
+                draw_list->PrimWriteIdx(base + 2 + i);
+            }
+        }
+    }
 
     if (g.Style.TabBorderSize > 0.0f)
     {
