@@ -7057,8 +7057,12 @@ void ImGui::RenderArrowPointingAt(ImDrawList* draw_list, ImVec2 pos, ImVec2 half
 // and because the saved space means that the left-most tab label can stay at exactly the same position as the label of a loose window.
 void ImGui::RenderArrowDockMenu(ImDrawList* draw_list, ImVec2 p_min, float sz, ImU32 col)
 {
-    draw_list->AddRectFilled(p_min + ImVec2(sz * 0.20f, sz * 0.15f), p_min + ImVec2(sz * 0.80f, sz * 0.30f), col);
-    RenderArrowPointingAt(draw_list, p_min + ImVec2(sz * 0.50f, sz * 0.85f), ImVec2(sz * 0.30f, sz * 0.40f), ImGuiDir_Down, col);
+    // Six dots in a 2-column × 3-row grid at half opacity
+    const ImU32 col_dim = (col & 0x00FFFFFFU) | (((col >> 24) >> 1) << 24);
+    const float r = sz * 0.09f;
+    for (int row = 0; row < 3; row++)
+        for (int c = 0; c < 2; c++)
+            draw_list->AddCircleFilled(p_min + ImVec2(sz * (0.30f + c * 0.40f), sz * (0.18f + row * 0.32f)), r, col_dim, 8);
 }
 
 static inline float ImAcos01(float x)
