@@ -962,10 +962,10 @@ bool ImGui::CollapseButton(ImGuiID id, const ImVec2& pos, ImGuiDockNode* dock_no
         RenderArrowDockMenu(window->DrawList, bb.Min, g.FontSize, text_col);
     else
     {
-        // Half-size arrow centred in the button box, at half opacity
+        // Reduced arrow centred in the button box, at half opacity
         const ImU32 col_dim = (text_col & 0x00FFFFFFU) | (((text_col >> 24) >> 1) << 24);
-        RenderArrow(window->DrawList, bb.Min + ImVec2(0.0f, g.FontSize * 0.25f), col_dim,
-            window->Collapsed ? ImGuiDir_Right : ImGuiDir_Down, 0.5f);
+        RenderArrow(window->DrawList, bb.Min + ImVec2(0.0f, g.FontSize * 0.10f), col_dim,
+            window->Collapsed ? ImGuiDir_Right : ImGuiDir_Down, 0.8f);
     }
 
     // Switch to moving the window after mouse is moved beyond the initial drag threshold
@@ -7104,7 +7104,7 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
             if (flags & ImGuiTreeNodeFlags_Bullet)
                 RenderBullet(window->DrawList, ImVec2(text_pos.x - text_offset_x * 0.60f, text_pos.y + g.FontSize * 0.5f), text_col);
             else if (!is_leaf)
-                RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y), text_col, is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 1.0f);
+                RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y + g.FontSize * 0.10f), (text_col & 0x00FFFFFFU) | (((text_col >> 24) >> 1) << 24), is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 0.8f);
             else // Leaf without bullet, left-adjusted text
                 text_pos.x -= text_offset_x - padding.x;
             if (flags & ImGuiTreeNodeFlags_ClipLabelForTrailingButton)
@@ -7126,7 +7126,7 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
             if (flags & ImGuiTreeNodeFlags_Bullet)
                 RenderBullet(window->DrawList, ImVec2(text_pos.x - text_offset_x * 0.5f, text_pos.y + g.FontSize * 0.5f), text_col);
             else if (!is_leaf)
-                RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y + g.FontSize * 0.15f), text_col, is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 0.70f);
+                RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y + g.FontSize * 0.10f), (text_col & 0x00FFFFFFU) | (((text_col >> 24) >> 1) << 24), is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 0.8f);
             if (g.LogEnabled)
                 LogSetNextTextDecoration(">", NULL);
         }
