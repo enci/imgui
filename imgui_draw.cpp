@@ -2538,12 +2538,27 @@ void ImDrawList::AddShadowRect(const ImVec2& obj_min, const ImVec2& obj_max, ImU
     if ((shadow_col & IM_COL32_A_MASK) == 0)
         return;
 
+    const bool is_filled = (flags & ImDrawFlags_ShadowCutOutShapeBackground) == 0;
+    const bool is_rounded = (obj_rounding > 0.0f) && ((flags & ImDrawFlags_RoundCornersMask_) != ImDrawFlags_RoundCornersNone);
+
+    // For rounded shapes, delegate to AddShadowConvexPoly so the shadow follows the rounded outline.
+    // Fall back to rectangular tiles when cutout + offset are combined (not supported by convex poly).
+    if (is_rounded && (is_filled || ImLengthSqr(shadow_offset) < 0.00001f))
+    {
+        IM_ASSERT(_Path.Size == 0);
+        PathRect(obj_min, obj_max, obj_rounding, flags);
+        const int pts_count = _Path.Size;
+        ImVec2* pts = (ImVec2*)alloca(pts_count * sizeof(ImVec2)); //-V630
+        memcpy(pts, _Path.Data, pts_count * sizeof(ImVec2));
+        _Path.Size = 0;
+        AddShadowConvexPoly(pts, pts_count, shadow_col, shadow_thickness, shadow_offset, flags);
+        return;
+    }
+
     ImVec2* inner_rect_points = NULL; // Points that make up the shape of the inner rectangle (used when it has rounded corners)
     int inner_rect_points_count = 0;
 
     // Generate a path describing the inner rectangle and copy it to our buffer
-    const bool is_filled = (flags & ImDrawFlags_ShadowCutOutShapeBackground) == 0;
-    const bool is_rounded = (obj_rounding > 0.0f) && ((flags & ImDrawFlags_RoundCornersMask_) != ImDrawFlags_RoundCornersNone); // Do we have rounded corners?
     if (is_rounded && !is_filled)
     {
         IM_ASSERT(_Path.Size == 0);
